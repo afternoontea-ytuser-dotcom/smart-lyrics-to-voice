@@ -1,0 +1,8 @@
+{
+  "name": "Video Text to Mandarin Speech",
+  "description": "Extract text from videos and convert it into natural-sounding Mandarin speech using Gemini AI.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
