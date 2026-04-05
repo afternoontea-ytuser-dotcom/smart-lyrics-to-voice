@@ -14,13 +14,20 @@ import {
   CheckCircle2, 
   AlertCircle,
   Type,
-  Languages
+  Languages,
+  Key,
+  ExternalLink
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
-const API_KEY = process.env.GEMINI_API_KEY || "";
+const API_KEY_ENV = process.env.GEMINI_API_KEY || "";
 
 export default function App() {
+  const [localApiKey, setLocalApiKey] = useState<string>(() => {
+    return localStorage.getItem('GEMINI_API_KEY_FALLBACK') || "";
+  });
+  const effectiveApiKey = API_KEY_ENV || localApiKey;
+
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [extractedText, setExtractedText] = useState<string>("");
@@ -31,6 +38,7 @@ export default function App() {
   const [step, setStep] = useState<'upload' | 'processing' | 'result'>('upload');
   const [mode, setMode] = useState<'video' | 'text'>('video');
   const [pastedText, setPastedText] = useState<string>("");
+  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
 
   // TTS Settings
   const [voice, setVoice] = useState<'Kore' | 'Puck' | 'Fenrir' | 'Charon' | 'Zephyr'>('Kore');
@@ -83,8 +91,11 @@ export default function App() {
   };
 
   const generateSpeech = async (text: string) => {
+    if (!effectiveApiKey) {
+      throw new Error("API Key 缺失。請在設定中提供有效的 API Key。");
+    }
     try {
-      const ai = new GoogleGenAI({ apiKey: API_KEY });
+      const ai = new GoogleGenAI({ apiKey: effectiveApiKey });
       setProcessingStep(`正在生成${targetLanguage}語音...`);
       
       const speedText = speed === 'slow' ? '語速緩慢' : speed === 'fast' ? '語速較快' : '語速正常';
@@ -184,6 +195,10 @@ export default function App() {
 
   const processVideo = async () => {
     if (!videoFile) return;
+    if (!effectiveApiKey) {
+      setError("API Key 缺失。請在下方提供有效的 API Key。");
+      return;
+    }
 
     setIsProcessing(true);
     setError(null);
@@ -193,7 +208,7 @@ export default function App() {
     setAudioUrl(null);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: API_KEY });
+      const ai = new GoogleGenAI({ apiKey: effectiveApiKey });
       const base64Video = await fileToBase64(videoFile);
 
       setProcessingStep("正在分析影片並提取文字...");
@@ -308,6 +323,13 @@ export default function App() {
             <h1 className="font-bold text-xl tracking-tight text-slate-800">影片文字生成語音</h1>
           </div>
             <div className="flex items-center gap-4">
+              <button 
+                onClick={() => setShowApiKeyInput(!showApiKeyInput)}
+                className={`p-2 rounded-lg transition-colors ${showApiKeyInput ? 'bg-indigo-100 text-indigo-600' : 'text-slate-400 hover:bg-slate-100'}`}
+                title="API 設定"
+              >
+                <Key size={20} />
+              </button>
               {videoFile && (
                 <button 
                   onClick={resetApp}
@@ -341,6 +363,57 @@ export default function App() {
             </button>
           </div>
         </div>
+
+        <AnimatePresence>
+          {showApiKeyInput && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="mb-8 bg-white rounded-2xl p-6 shadow-sm border border-slate-200"
+            >
+              <div className="max-w-md mx-auto space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                    <Key size={18} className="text-indigo-500" />
+                    API 金鑰設定
+                  </h3>
+                  <button 
+                    onClick={() => setShowApiKeyInput(false)}
+                    className="text-slate-400 hover:text-slate-600"
+                  >
+                    關閉
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Gemini API Key</label>
+                  <input 
+                    type="password"
+                    value={localApiKey}
+                    placeholder="在此貼上你的 API Key..."
+                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setLocalApiKey(val);
+                      localStorage.setItem('GEMINI_API_KEY_FALLBACK', val);
+                    }}
+                  />
+                  <p className="text-[10px] text-slate-500">
+                    金鑰將儲存在你的瀏覽器本地 (LocalStorage)，不會上傳至任何伺服器。
+                  </p>
+                </div>
+                <a 
+                  href="https://aistudio.google.com/app/apikey" 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:underline"
+                >
+                  從 Google AI Studio 取得免費 Key <ExternalLink size={12} />
+                </a>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
@@ -619,7 +692,37 @@ export default function App() {
                     className="mt-4 p-4 bg-red-50 border border-red-100 rounded-xl flex items-start gap-3 text-red-700"
                   >
                     <AlertCircle size={18} className="shrink-0 mt-0.5" />
-                    <p className="text-sm font-medium">{error}</p>
+                    <div className="text-sm">
+                      <p className="font-medium">{error}</p>
+                      {!effectiveApiKey && (
+                        <div className="mt-3 p-3 bg-white rounded-lg border border-red-200 space-y-3">
+                          <p className="text-xs text-slate-600 font-medium flex items-center gap-1">
+                            <Key size={12} />
+                            請輸入你的 Gemini API Key 以繼續：
+                          </p>
+                          <div className="flex gap-2">
+                            <input 
+                              type="password"
+                              placeholder="在此貼上 API Key..."
+                              className="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded text-xs outline-none focus:ring-1 focus:ring-indigo-500"
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setLocalApiKey(val);
+                                localStorage.setItem('GEMINI_API_KEY_FALLBACK', val);
+                              }}
+                            />
+                          </div>
+                          <a 
+                            href="https://aistudio.google.com/app/apikey" 
+                            target="_blank" 
+                            rel="noreferrer"
+                            className="text-[10px] text-indigo-600 hover:underline flex items-center gap-1"
+                          >
+                            從 Google AI Studio 取得免費 Key <ExternalLink size={10} />
+                          </a>
+                        </div>
+                      )}
+                    </div>
                   </motion.div>
                 )}
               </div>
