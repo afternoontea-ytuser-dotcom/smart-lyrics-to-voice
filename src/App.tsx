@@ -15,8 +15,10 @@ import {
   AlertCircle,
   Type,
   Languages,
-  Key,
-  ExternalLink
+  Settings,
+  ExternalLink,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -322,13 +324,18 @@ export default function App() {
             </div>
             <h1 className="font-bold text-xl tracking-tight text-slate-800">影片文字生成語音</h1>
           </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <button 
                 onClick={() => setShowApiKeyInput(!showApiKeyInput)}
-                className={`p-2 rounded-lg transition-colors ${showApiKeyInput ? 'bg-indigo-100 text-indigo-600' : 'text-slate-400 hover:bg-slate-100'}`}
-                title="API 設定"
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all border ${
+                  showApiKeyInput 
+                    ? 'bg-indigo-50 border-indigo-200 text-indigo-600' 
+                    : 'bg-white border-slate-200 text-slate-600 hover:border-indigo-300 hover:text-indigo-600'
+                }`}
               >
-                <Key size={20} />
+                <Settings size={18} className={showApiKeyInput ? 'animate-spin-slow' : ''} />
+                <span className="text-xs font-bold">API 設定</span>
+                {showApiKeyInput ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
               </button>
               {videoFile && (
                 <button 
