@@ -16,6 +16,7 @@ import {
   Type,
   Languages,
   Settings,
+  Key,
   ExternalLink,
   ChevronDown,
   ChevronUp
