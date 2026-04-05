@@ -1,6 +1,6 @@
 {
-  "name": "Video Text to Mandarin Speech",
-  "description": "Extract text from videos and convert it into natural-sounding Mandarin speech using Gemini AI.",
+  "name": "影片文字生成語音",
+  "description": "從影片中提取文字並轉換為自然流暢的語音，支援多種語言、聲音類型及風格設定。",
   "requestFramePermissions": [
     "camera",
     "microphone"
